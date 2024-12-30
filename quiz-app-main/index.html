@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Application</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+
+        header {
+            text-align: center;
+            background-color: #007bff;
+            color: white;
+            padding: 1rem 0;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .genres {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .genres button {
+            margin: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            background-color: #007bff;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .genres button:hover {
+            background-color: #0056b3;
+        }
+
+        .question {
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+        }
+
+        .options {
+            list-style: none;
+            padding: 0;
+        }
+
+        .options li {
+            margin: 0.5rem 0;
+        }
+
+        .options button {
+            width: 100%;
+            padding: 0.75rem;
+            border: none;
+            background-color: #007bff;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .options button:hover {
+            background-color: #0056b3;
+        }
+
+        .score {
+            text-align: center;
+            font-size: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        footer {
+            text-align: center;
+            padding: 1rem;
+            background-color: #333;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Quiz Application</h1>
+    </header>
+    <div class="container">
+        <div id="genre-selection" class="genres">
+            <h2>Select a Genre</h2>
+            <button onclick="startQuiz('HTML')">HTML</button>
+            <button onclick="startQuiz('CSS')">CSS</button>
+            <button onclick="startQuiz('JavaScript')">JavaScript</button>
+        </div>
+        <div id="quiz" style="display:none;">
+            <p id="question" class="question">Question will appear here</p>
+            <ul class="options" id="options"></ul>
+            <button id="next" style="display:none;">Next Question</button>
+            <p id="timer">Time Left: <span id="time">10</span> seconds</p>
+        </div>
+        <div id="score-container" class="score" style="display: none;">
+            Your Score: <span id="score">0</span>
+        </div>
+    </div>
+    <footer>
+        <p>&copy; 2024 Quiz Application. All rights reserved.</p>
+    </footer>
+
+    <script>
+        const allQuestions = {
+            HTML: [
+                { question: "What does HTML stand for?", options: ["Hyper Text Markup Language", "High Text Machine Language", "Hyperlink Text Mark Language", "Hyper Transfer Machine Language"], answer: 0 },
+                { question: "What is the purpose of the <title> tag?", options: ["Add a heading", "Specify the document title", "Insert an image", "Create a table"], answer: 1 },
+                { question: "Which tag is used for inserting a line break?", options: ["<br>", "<lb>", "<break>", "<newline>"], answer: 0 },
+                { question: "Which tag is used for creating hyperlinks?", options: ["<a>", "<link>", "<href>", "<hyper>"], answer: 0 },
+                { question: "Which attribute specifies an alternate text for an image?", options: ["alt", "src", "title", "text"], answer: 0 }
+            ],
+            CSS: [
+                { question: "What does CSS stand for?", options: ["Colorful Style Sheets", "Cascading Style Sheets", "Creative Style Sheets", "Computer Style Sheets"], answer: 1 },
+                { question: "Which property is used to change text color?", options: ["font-color", "text-color", "color", "background-color"], answer: 2 },
+                { question: "What is the default position value in CSS?", options: ["relative", "static", "absolute", "fixed"], answer: 1 },
+                { question: "Which property is used to change background color?", options: ["background-color", "color", "bg-color", "background"], answer: 0 },
+                { question: "Which unit is NOT relative?", options: ["em", "px", "%", "rem"], answer: 1 }
+            ],
+            JavaScript: [
+                { question: "What is JavaScript used for?", options: ["Styling a webpage", "Adding interactivity", "Structuring a webpage", "Database management"], answer: 1 },
+                { question: "What is used to declare a variable in JavaScript?", options: ["var", "let", "const", "All of the above"], answer: 3 },
+                { question: "Which method is used to write HTML content dynamically?", options: ["document.write()", "console.log()", "alert()", "prompt()"], answer: 0 },
+                { question: "What is the output of '2' + 2 in JavaScript?", options: ["4", "22", "Error", "NaN"], answer: 1 },
+                { question: "What does 'this' keyword refer to?", options: ["The current object", "Global object", "Both", "None"], answer: 0 }
+            ]
+        };
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let timer;
+        let timeLeft = 10;
+        let selectedGenre;
+
+        const questionEl = document.getElementById('question');
+        const optionsEl = document.getElementById('options');
+        const nextButton = document.getElementById('next');
+        const scoreContainer = document.getElementById('score-container');
+        const scoreEl = document.getElementById('score');
+        const timerEl = document.getElementById('time');
+        const quizEl = document.getElementById('quiz');
+        const genreSelectionEl = document.getElementById('genre-selection');
+
+        function startQuiz(genre) {
+            selectedGenre = genre;
+            genreSelectionEl.style.display = 'none';
+            quizEl.style.display = 'block';
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            clearInterval(timer);
+            timeLeft = 10;
+            timerEl.textContent = timeLeft;
+            timer = setInterval(() => {
+                timeLeft--;
+                timerEl.textContent = timeLeft;
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    nextQuestion();
+                }
+            }, 1000);
+
+            const currentQuestion = allQuestions[selectedGenre][currentQuestionIndex];
+            questionEl.textContent = currentQuestion.question;
+            optionsEl.innerHTML = '';
+            currentQuestion.options.forEach((option, index) => {
+                const button = document.createElement('button');
+                button.textContent = option;
+                button.onclick = () => checkAnswer(index);
+                optionsEl.appendChild(button);
+            });
+        }
+
+        function checkAnswer(selected) {
+            clearInterval(timer);
+            const currentQuestion = allQuestions[selectedGenre][currentQuestionIndex];
+            if (selected === currentQuestion.answer) {
+                score++;
+            }
+            nextButton.style.display = 'block';
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < allQuestions[selectedGenre].length) {
+                loadQuestion();
+                nextButton.style.display = 'none';
+            } else {
+                showScore();
+            }
+        }
+
+        function showScore() {
+            quizEl.style.display = 'none';
+            scoreContainer.style.display = 'block';
+            scoreEl.textContent = `${score} / ${allQuestions[selectedGenre].length}`;
+            // Redirect to genre selection after 5 seconds
+            setTimeout(() => {
+                scoreContainer.style.display = 'none';
+                genreSelectionEl.style.display = 'block';
+                resetQuiz();
+            }, 5000);
+        }
+
+        function resetQuiz() {
+            currentQuestionIndex = 0;
+            score = 0;
+        }
+
+        nextButton.onclick = nextQuestion;
+    </script>
+</body>
+</html>
